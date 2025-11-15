@@ -51,6 +51,29 @@
 .booking-summary .seats-list { display:flex; flex-wrap:wrap; gap:8px }
 .booking-summary .seat-pill { background:#f5f5f5; padding:6px 8px; border-radius:6px; font-weight:600 }
 
+/* Dialog paper styling and responsive layout */
+.MuiDialog-paper {
+    border-radius: 12px !important;
+    max-width: 760px !important;
+    width: calc(100% - 48px) !important;
+    padding: 18px !important;
+}
+
+@media (max-width: 720px) {
+    .booking-summary { flex-direction: column; }
+    .booking-summary .right { max-width: none }
+    .MuiDialog-paper { width: calc(100% - 24px) !important; }
+}
+
+/* Seat pill variants */
+.seat-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:#f5f5f5; color:#222; font-weight:600 }
+.seat-pill.premium { background: #efe3ff; color: #4b2e83 }
+.seat-pill.regular { background: #fff7e6; color: #6b4b00 }
+
+/* DialogActions alignment */
+.MuiDialogActions-root { display:flex; justify-content: flex-end; gap:12px; padding: 12px 24px 18px 24px }
+
+
 
 /* Legend improvements */
 .seat-legend span { display:inline-flex; align-items:center; gap:8px; margin-right:12px; }

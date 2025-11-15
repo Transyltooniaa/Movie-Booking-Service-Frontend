@@ -2,133 +2,154 @@ import React,{useState,useEffect} from 'react'
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
-import {useParams, useNavigate} from 'react-router-dom'
+// removed email TextField import (no longer collecting email client-side)
+import Grid from '@mui/material/Grid'
+import Typography from '@mui/material/Typography'
+import {useParams, useNavigate, useLocation} from 'react-router-dom'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import NavBar from './NavBar';
-// import TextField from '@mui/material/TextField';
-import jwt_decode from "jwt-decode";
 import bms from "../image/bms.png";
-
 
 
 function Payment() {
  
-const token = localStorage.getItem("Authorization") 
-const decoded = jwt_decode(token);
-
   let navigate=useNavigate()
 
-const { id,theaterId,showId,selected,total } = useParams()
-let [movie,setMovie] = useState({})
-let [show,setShow] = useState([])
-let [theater,setTheater] = useState([])
-//  let [email,setEmail] = useState("")
+  // params from route: /bookmyshow/payment/:theaterId/:showId/:selected/:total
+  const { theaterId, showId, selected, total } = useParams()
+  const location = useLocation()
+  const [movie, setMovie] = useState(null)
+  const [show, setShow] = useState(null)
+  const [loading, setLoading] = useState(false)
 
+  const posterFallback = bms
 
-
-const getMovie = () => {
-fetch(`https://book-my-show-backend-arasuramanan.onrender.com/bookmyshow/movies/${id}`,
-{
-    method:"GET",
-    headers:{
-      Authorization:localStorage.getItem("Authorization")
-      
-  }})
-.then((data) => data.json())
-.then((list) => setMovie(list))
-}
-useEffect(() => {getMovie()},[id])
-
-useEffect(() => {
-  if(movie){
-    setShow(movie.shows)
-  }
-  }, [movie])
-
+  // load show -> then movie (show contains movieId and auditorium/pricing)
   useEffect(() => {
-    if(movie){
-      setTheater(movie.theaters)
-    }
-    }, [movie])
-  
-  let movieTicket = () => {
-    const bookingUser = {
-        email:decoded.email,
+    if (!showId) return
+    let mounted = true
+    const load = async () => {
+      try {
+        const res = await fetch(`/shows/${showId}`)
+        if (!res.ok) return
+        const ct = res.headers.get('content-type') || ''
+        if (!ct.includes('application/json')) return
+        const s = await res.json()
+        if (!mounted) return
+        setShow(s)
+
+        // fetch movie by id from show
+        const movieId = s.movieId ?? s.movie_id ?? s.movie
+        if (movieId) {
+          const mres = await fetch(`/movies/${movieId}`)
+          if (mres && mres.ok) {
+            const mct = mres.headers.get('content-type') || ''
+            if (mct.includes('application/json')) {
+              const m = await mres.json()
+              if (!mounted) return
+              setMovie(m)
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading show/movie for payment', err)
       }
-    fetch(`https://book-my-show-backend-arasuramanan.onrender.com/bookmyshow/movies/${id}`,{
-      method:"POST",
-      body: JSON.stringify(bookingUser),
-      headers: {
-        "Content-Type" : "application/json",
-        Authorization:localStorage.getItem("Authorization")
-    },
-    })
-        .then((data) => data.json())
-          .then((data) => console.log(data),
-          toast.success('Mail Sent Regarding Your Tickets', {
-            position: "top-center",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-            })
-          )
-          .then(() => navigate('/bookmyshow/movies'))
+    }
+    load()
+    return () => (mounted = false)
+  }, [showId])
+
+  const movieTicket = async () => {
+    // No client-side email collection; backend handles notifications.
+    try {
+      setLoading(true)
+      // selected is expected to be a comma-separated list of seatIds (URL-encoded)
+      const seatsRaw = decodeURIComponent(selected || '')
+      const seats = seatsRaw ? seatsRaw.split(',').map(s => s.trim()).filter(Boolean) : []
+      const payload = { seats, amount: Number(total) }
+      const res = await fetch(`/shows/${showId}/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        toast.error('Failed to complete booking')
+        setLoading(false)
+        return
+      }
+      await res.json()
+      toast.success('Booking successful — ticket info will be sent to your email')
+      setLoading(false)
+      navigate('/bookmyshow/movies')
+    } catch (err) {
+      console.error(err)
+      setLoading(false)
+      toast.error('Booking error')
+    }
+  }
+
+  const posterSrc = movie?.poster ?? movie?.posterUrl ?? movie?.image ?? movie?.poster_path ?? posterFallback
+
+  // display seat labels if passed via navigation state (SeatLayout passes labels), otherwise fall back to URL param
+  const displaySeatLabels = (() => {
+    const sFromState = location?.state?.labels
+    if (sFromState && Array.isArray(sFromState) && sFromState.length) return sFromState
+    const seatsRaw = decodeURIComponent(selected || '')
+    return seatsRaw ? seatsRaw.split(',').map(s => s.trim()).filter(Boolean) : []
+  })()
+
+  const formatShowTime = (start) => {
+    try {
+      const d = new Date(start)
+      const datePart = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+      const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', hour12: true }).replace(':00', '')
+      return `${datePart}, ${timePart}`
+    } catch (e) {
+      return start
+    }
   }
 
   return <>
-  <NavBar/>
-  <Box sx={{backgroundColor:"#f2f2f2",display:"flex",alignItems:"center",padding:"30px"}}>
-<Paper sx={{padding:"30px 30px",width:{xs:"300px",sm:"400px",md:"400px"},margin:"0px auto",textAlign:"center"}}>
-        <Box
-        component="img"
-        sx={{
-            margin:0,
-          objectFit:'cover',
-          objectPosition:'center',
-          width: { xs: '120px', md: '120px' },
-        }}
-        alt="The house from the offer."
-        src={bms}
-        />
-        <h4 style={{fontSize:"14px",lineHeight:"22px"}}>Make Your Payment here by Entering Your Mail Id for Share the ticket information which booked by You.</h4>
-
-        <Box sx={{display:"flex",flexDirection:"column",justifyContent:"center",gap:3}}>
-        <Box
-        component="img"
-        sx={{
-          borderRadius:"2%",
-            margin:"0px auto",
-          objectFit:'cover',
-          objectPosition:'top',
-          width: { xs: '200px', md: '200px' },
-          height: { xs: '250px', md: '250px' }
-        }}
-        alt="The house from the offer."
-        src={movie.poster}
-        />
-        <p style={{margin:0,fontWeight:700}}>{theater && theater.length > 0 ? theater.find(v => v.theaterid === theaterId)?.theatername : ''}</p>
-        <p style={{margin:0,fontWeight:600}}>Show Time : {show && show.length > 0 ? show.find(e => e.showid === showId).show : ''}</p>
-        <p style={{margin:0,fontWeight:600}}>Your Seats : {selected}</p>
-        <Box sx={{display:"flex",justifyContent:"space-between"}}>
-            <p style={{fontWeight:700}}>{movie.name}</p>
-            <p style={{fontWeight:700}}>₹ {total}</p>
+    <NavBar />
+    <Box sx={{ backgroundColor: '#f2f2f2', display: 'flex', alignItems: 'center', padding: '40px 20px' }}>
+      <Paper sx={{ padding: 3, width: { xs: '92%', sm: 720 }, margin: '0 auto', textAlign: 'left', boxShadow: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+          <Box component="img" sx={{ height: 46 }} alt="logo" src={bms} />
         </Box>
-        <Box sx={{display:"flex",flexDirection:"column",justifyContent:"center",gap:3}}>
+        <Typography variant="h6" sx={{ mb: 1 }}>Complete your payment</Typography>
+        <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>We'll send ticket information to your email after successful booking.</Typography>
 
-        <p style={{margin:0,fontWeight:500}}>The ticket information will send to this Email Id <span style={{margin:0,fontWeight:700}}>{decoded.email}</span></p>
+        <Grid container spacing={2} sx={{ alignItems: 'center' }}>
+          <Grid item xs={12} sm={4} md={3}>
+            <Box component="img" sx={{ width: '100%', maxWidth: 240, borderRadius: 1, objectFit: 'cover', boxShadow: 3 }} alt="poster" src={posterSrc} />
+          </Grid>
 
-<Button sx={{backgroundColor:"#f84464",padding:"15px"}} variant="contained" onClick={movieTicket}>Make Payment</Button>
-<ToastContainer />
-</Box>
-        </Box>
+          <Grid item xs={12} sm={5} md={6}>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>{movie?.name || movie?.title || ''}</Typography>
+            <Typography sx={{ color: '#444', mb: 0.6 }}>Show: <strong style={{fontWeight:600}}>{show ? formatShowTime(show.startTime) : ''}</strong></Typography>
+            <Typography sx={{ color: '#444', mb: 0.6 }}>Auditorium: <strong style={{fontWeight:600}}>{show?.auditorium ?? theaterId}</strong></Typography>
+            <Typography sx={{ color: '#444', mb: 1 }}>Seats: <strong style={{fontWeight:600}}>{displaySeatLabels.join(', ')}</strong></Typography>
 
-</Paper>
-  </Box>
+            <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+              <Button variant="outlined" onClick={() => navigate(-1)} disabled={loading} sx={{ borderColor: '#bbb', color: '#222', px: 3 }}>Back</Button>
+              <Button variant="contained" onClick={movieTicket} disabled={loading} sx={{ backgroundColor: '#f84464', boxShadow: '0 6px 18px rgba(248,68,100,0.22)', px: 3 }}>
+                {loading ? 'Processing...' : 'Make Payment'}
+              </Button>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={3} md={3}>
+            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+              <Typography sx={{ color: '#666', mb: 1 }}>Amount</Typography>
+              <Typography sx={{ fontSize: 20, fontWeight: 800 }}>₹ {total}</Typography>
+            </Box>
+          </Grid>
+        </Grid>
+
+        <ToastContainer />
+      </Paper>
+    </Box>
   </>
 }
 

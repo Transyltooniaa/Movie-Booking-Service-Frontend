@@ -125,7 +125,10 @@ function SeatLayout() {
     const selectedParam = encodeURIComponent(computeSeatIds().join(','))
     const totalParam = totalPrice
     // navigate to payment route
-    navigate(`/bookmyshow/movies/${id}/payment/${auditorium}/${showId}/${selectedParam}/${totalParam}`)
+    navigate(
+      `/bookmyshow/payment/${encodeURIComponent(auditorium)}/${encodeURIComponent(showId)}/${selectedParam}/${encodeURIComponent(totalParam)}`,
+      { state: { labels: selectedSeatLabels } }
+    )
   }
 
   // Derived, readable variables for UI
@@ -268,7 +271,7 @@ function SeatLayout() {
               </div>
             </div>
 
-            <Button className="proceed-btn" variant="contained" sx={{ width: '100%' }} disabled={selectedSeats.length === 0} onClick={openConfirm}>
+            <Button style={{ position: 'relative', left: 35}} className="proceed-btn" variant="contained" sx={{ width: '100%' }} disabled={selectedSeats.length === 0} onClick={openConfirm}>
               PROCEED
             </Button>
             <Dialog open={confirmOpen} onClose={closeConfirm} aria-labelledby="confirm-dialog-title">
@@ -285,20 +288,34 @@ function SeatLayout() {
                     <Typography sx={{ mb: 1 }}>
                       <strong>{selectedSeats.length}</strong> seats selected
                     </Typography>
-                    <div style={{ marginBottom: 8 }}>
+                    <div style={{ marginBottom: 12, lineHeight: 1.45 }}>
                       <div style={{ color: '#666', marginBottom: 6 }}>Show</div>
-                      <div style={{ fontWeight: 700 }}>{showStart ? new Date(showStart).toLocaleString() : 'TBA'}</div>
-                      {showEnd ? <div style={{ color: '#666', fontSize: 13 }}>{new Date(showEnd).toLocaleTimeString()}</div> : null}
-                      {auditoriumName ? <div style={{ marginTop: 8, color: '#444' }}>Auditorium: <strong>{auditoriumName}</strong></div> : null}
+                      <div style={{ fontWeight: 700, marginBottom: 6 }}>Start: {showStart ? new Date(showStart).toLocaleString() : 'TBA'}</div>
+                      {showEnd ? (
+                        <div style={{ color: '#666', fontSize: 13, marginBottom: 6 }}>End: {new Date(showEnd).toLocaleString()}</div>
+                      ) : null}
+                      {auditoriumName ? (
+                        <div style={{ marginTop: 6, color: '#444' }}>Auditorium: <strong>{auditoriumName}</strong></div>
+                      ) : null}
                     </div>
                   </div>
 
                   <div className="right">
                     <div style={{ marginBottom: 10, color: '#666' }}>Seats</div>
                     <div className="seats-list">
-                      {selectedSeatLabels.length ? selectedSeatLabels.map((s) => (
-                        <div key={s} className="seat-pill">{s}</div>
-                      )) : <div style={{ color: '#999' }}>No seats</div>}
+                      {selectedSeatLabels.length ? selectedSeatLabels.map((s) => {
+                        const r = s.split('-')[0]
+                        const rIdx = rows.indexOf(r)
+                        const isP = rIdx >= maxRows - premiumCount
+                        const pillClass = `seat-pill ${isP ? 'premium' : 'regular'}`
+                        const perPrice = isP ? (pricePremium ?? 0) : (priceRegular ?? 0)
+                        return (
+                          <div key={s} className={pillClass}>
+                            <span style={{ marginRight: 6 }}>{s}</span>
+                            <small style={{ color: '#666', fontWeight: 500 }}>{`₹${perPrice}`}</small>
+                          </div>
+                        )
+                      }) : <div style={{ color: '#999' }}>No seats</div>}
                     </div>
 
                     <div style={{ marginTop: 12, borderTop: '1px solid #eee', paddingTop: 12 }}>
