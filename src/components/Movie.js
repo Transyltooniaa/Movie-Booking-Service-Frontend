@@ -163,7 +163,7 @@ const formatShowTime = (iso) => {
                           <Typography variant="caption" sx={{color:'#666'}}>{s.auditorium || 'Auditorium'}</Typography>
                         </Box>
                         <Box sx={{display:'flex',gap:1,alignItems:'center'}}>
-                          <Button size="small" variant="contained" sx={{background:'linear-gradient(90deg,#ff3a44,#f8446b)',textTransform:'none',boxShadow:'0 6px 16px rgba(248,68,107,0.18)'}} onClick={(e)=>{e.stopPropagation(); navigate(`/bookmyshow/movies/${id}/seat-layout`)}}>Book</Button>
+                          <Button size="small" variant="contained" sx={{background:'linear-gradient(90deg,#ff3a44,#f8446b)',textTransform:'none',boxShadow:'0 6px 16px rgba(248,68,107,0.18)'}} onClick={(e)=>{e.stopPropagation(); navigate(`/bookmyshow/seat-layout/${s.id}`)}}>Book</Button>
                         </Box>
                       </Box>
                     )

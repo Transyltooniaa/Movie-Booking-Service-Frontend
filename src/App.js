@@ -24,13 +24,14 @@ function App() {
   <Route path='/' element={<Movies/>}/>
   <Route path='/users/signup' element={<Signup/>}/>
   <Route path='/users/login' element={<Login/>}/>
-  <Route path='/bookmyshow/movies/admin' element={<Admin/>}/>
+  {/* <Route path='/bookmyshow/movies/admin' element={<Admin/>}/>
   <Route path='/bookmyshow/movies/add' element={<AdminaddMovies/>}/>
-  <Route path='/bookmyshow/movies/edit/:id' element={<AdmineditMovie/>}/>
+  <Route path='/bookmyshow/movies/edit/:id' element={<AdmineditMovie/>}/> */}
   <Route path='/bookmyshow/movies' element={<Movies/>}/>
   <Route path='/bookmyshow/movies/query' element={<Query/>}/>
   <Route path='/bookmyshow/movies/:id' element={<Movie/>}/>
-  <Route path='/bookmyshow/movies/:id/seat-layout' element={<SeatLayout/>}/>
+  <Route path='/bookmyshow/seat-layout/:showId' element={<SeatLayout/>}/>
+  <Route path='/bookmyshow/payment/:theaterId/:showId/:selected/:total' element={<Payment/>}/>
   <Route path='/users/bookings' element={<MyBookings/>}/>
   </Routes>
   

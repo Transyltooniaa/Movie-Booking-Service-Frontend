@@ -1,34 +1,77 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import NavBar from './NavBar'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import Typography from '@mui/material/Typography'
 
 // Simple seat layout mock similar to BookMyShow
 function SeatLayout() {
-  const { id } = useParams()
+  // read both movie id and show id from route params
+  const { id, showId } = useParams()
   const [movie, setMovie] = useState(null)
   const [selectedSeats, setSelectedSeats] = useState([])
+  const [priceRegular, setPriceRegular] = useState(null)
+  const [pricePremium, setPricePremium] = useState(null)
+  const [show, setShow] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const navigate = useNavigate()
 
-  // minimal robust fetch for movie info (optional)
+  // Consolidated initial load: fetch movie, show and pricing once and log the returned objects
   useEffect(() => {
+    // run when we have a showId; movie id is optional because show contains movieId
+    if (!showId) return
     let mounted = true
-    const getMovie = async () => {
+
+    const loadInitialData = async () => {
       try {
-        const res = await fetch(`/movies/${id}`)
-        if (!res.ok) return
-        const contentType = res.headers.get('content-type') || ''
-        if (contentType.includes('application/json')) {
-          const data = await res.json()
-          if (mounted) setMovie(data)
+        const results = {}
+
+        // fetch show first (contains pricing and movieId)
+        const showRes = await fetch(`/shows/${showId}`)
+        if (showRes && showRes.ok) {
+          const ct = showRes.headers.get('content-type') || ''
+          if (ct.includes('application/json')) results.show = await showRes.json()
         }
+
+        if (!mounted) return
+
+        // set show and pricing immediately
+        if (results.show) {
+          setShow(results.show)
+          const s = results.show
+          setPriceRegular(s.priceRegular ?? s.price_regular ?? s.price ?? null)
+          setPricePremium(s.pricePremium ?? s.price_premium ?? s.pricepremium ?? null)
+        }
+
+        // determine which movie id to fetch: prefer `id` param, otherwise use show.movieId
+        const movieIdToFetch = id ?? results.show?.movieId ?? results.show?.movie_id ?? null
+        if (movieIdToFetch) {
+          const movieRes = await fetch(`/movies/${movieIdToFetch}`)
+          if (movieRes && movieRes.ok) {
+            const ct2 = movieRes.headers.get('content-type') || ''
+            if (ct2.includes('application/json')) results.movie = await movieRes.json()
+          }
+        }
+
+        if (!mounted) return
+
+        if (results.movie) setMovie(results.movie)
+
+        // log everything once so the developer can inspect fields
+        console.log('SeatLayout initial load:', results)
       } catch (err) {
-        console.warn('Could not load movie for seat layout', err)
+        console.warn('Could not load initial data for seat layout', err)
       }
     }
-    getMovie()
+
+    loadInitialData()
     return () => (mounted = false)
-  }, [id])
+  }, [showId, id])
 
   // Seat map configuration: rows are letters (A..Z) and columns are integers
   const rowsCount = 12 // change this number to show more/less rows (max 26)
@@ -51,16 +94,58 @@ function SeatLayout() {
     setSelectedSeats((prev) => (prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]))
   }
 
+  // compute running total using pricing and whether selected seats are premium
+  const totalPrice = selectedSeats.reduce((acc, key) => {
+    const r = key.split('-')[0]
+    const rIdx = rows.indexOf(r)
+    const isPremiumRow = rIdx >= maxRows - premiumCount
+    const seatPrice = isPremiumRow ? (pricePremium ?? 0) : (priceRegular ?? 0)
+    return acc + seatPrice
+  }, 0)
+
+  const openConfirm = () => setConfirmOpen(true)
+  const closeConfirm = () => setConfirmOpen(false)
+
+  const computeSeatIds = () => {
+    return selectedSeats.map((key) => {
+      const [r, s] = key.split('-')
+      const rIdx = rows.indexOf(r)
+      const seatNum = Number(s)
+      const seatId = rIdx * seatsPerRow + (seatNum - 1) + 1
+      return seatId
+    })
+  }
+
+  const selectedSeatIds = computeSeatIds()
+  const selectedSeatLabels = selectedSeats.slice().sort((a,b)=>a.localeCompare(b))
+
+  const proceedToPayment = () => {
+    // gather params expected by Payment: id, theaterId (use auditorium), showId, selected, total
+    const auditorium = show?.auditorium ?? show?.auditoriumName ?? show?.theater ?? show?.theatre ?? show?.theatreId ?? show?.theaterId ?? ''
+    const selectedParam = encodeURIComponent(computeSeatIds().join(','))
+    const totalParam = totalPrice
+    // navigate to payment route
+    navigate(`/bookmyshow/movies/${id}/payment/${auditorium}/${showId}/${selectedParam}/${totalParam}`)
+  }
+
+  // Derived, readable variables for UI
+  const movieTitle = movie?.title ?? movie?.name ?? ''
+  const movieGenre = movie?.genre ?? movie?.type ?? ''
+  const movieDuration = movie?.duration ?? ''
+  const showStart = show?.startTime ?? show?.start ?? null
+  const showEnd = show?.endTime ?? show?.end ?? null
+  const auditoriumName = show?.auditorium ?? show?.auditoriumName ?? show?.theatre ?? show?.theatreName ?? ''
+
   return (
       <div>
       <NavBar />
       <Box sx={{ width: '92%', margin: '30px auto', display: 'flex', justifyContent: 'center' }}>
         <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', width: '100%', maxWidth: 1200 }}>
           <Box sx={{ width: '100%', maxWidth: 920 }}>
-            <h3 style={{ textAlign: 'left', marginBottom: 6 }}>{movie ? movie.name : 'Select seats'}</h3>
-            <p style={{ color: '#666', marginTop: 0, marginBottom: 12 }}>{movie ? movie.type : ''}</p>
+            <h3 style={{ textAlign: 'left', marginBottom: 6 }}>{movieTitle || 'Select seats'}</h3>
+            <p style={{ color: '#666', marginTop: 0, marginBottom: 12 }}>{movieGenre || movieDuration ? `${movieGenre}${movieDuration ? ' • ' + movieDuration : ''}` : ''}</p>
             <div style={{ textAlign: 'center', marginBottom: 12 }}>
-              <div style={{ width: '60%', maxWidth: 680, margin: '0 auto', display: 'block', background: '#e9eef7', padding: '12px 0', borderRadius: 8, boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}>
+              <div className="screen-bar" style={{ width: '60%', maxWidth: 680, margin: '0 auto', display: 'block' }}>
                 <strong>Screen</strong>
               </div>
             </div>
@@ -99,19 +184,28 @@ function SeatLayout() {
                           cursor: sold ? 'not-allowed' : 'pointer',
                           color: sold ? '#999' : '#111',
                           userSelect: 'none',
+                          // smooth transitions
+                          transition: 'transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease',
                         }
 
                         const availableStyle = isPremiumRow
                           ? { background: selected ? '#d6b3ff' : '#f3e8ff', border: '1px solid #caa7ff' }
                           : { background: selected ? '#f6c84c' : '#fff', border: '1px solid #b7e6bd' }
 
-                        const style = Object.assign({}, baseStyle, sold ? { background: '#eee', border: '1px solid #ddd' } : availableStyle)
+                        // selected/toggled appearance
+                        const selectedStyle = selected ? { transform: 'translateY(-6px) scale(1.03)', boxShadow: '0 14px 30px rgba(3,22,61,0.12)' } : {}
+                        const soldStyle = sold ? { background: '#eee', border: '1px solid #ddd', cursor: 'not-allowed', color: '#999' } : {}
+
+                        const style = Object.assign({}, baseStyle, sold ? soldStyle : availableStyle, selectedStyle)
+
+                        const seatClass = `seat ${sold ? 'sold' : selected ? 'selected' : ''} ${isPremiumRow ? 'premium' : 'regular'}`
 
                         return (
                           <div
                             key={key}
                             id={`seat-${seatId}`}
                             data-seat-id={seatId}
+                            className={seatClass}
                             style={style}
                             onClick={() => toggleSeat(r, seatNum, rIdx, sIdx)}
                             title={`${r}${seatNum} — id:${seatId}`}
@@ -153,14 +247,80 @@ function SeatLayout() {
             </div>
           </Box>
 
-          <Box sx={{ width: 260, ml: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div style={{ width: '100%', padding: 16, borderRadius: 8, background: '#fff', boxShadow: '0 1px 6px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedSeats.length}</div>
-              <div style={{ fontSize: 12, color: '#666' }}>Seats selected</div>
+          <Box sx={{ width: 260, ml: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="right-panel" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: '#666' }}>Regular</div>
+                <div style={{ fontWeight: 700 }}>{priceRegular != null ? `₹${priceRegular}` : '—'}</div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 12, color: '#666' }}>Premium</div>
+                <div style={{ fontWeight: 700 }}>{pricePremium != null ? `₹${pricePremium}` : '—'}</div>
+              </div>
             </div>
-            <Button variant="contained" sx={{ backgroundColor: '#f84464', width: '100%' }} disabled={selectedSeats.length === 0} onClick={() => alert(`Proceeding with ${selectedSeats.length} seats`)}>
-              Proceed
+
+            <div className="right-panel" style={{ width: '100%', textAlign: 'center' }}>
+              <div style={{ width: '100%', padding: 16, borderRadius: 8, background: '#fff', textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 800 }}>{selectedSeats.length}</div>
+                <div style={{ fontSize: 12, color: '#777', marginBottom: 8 }}>Seats selected</div>
+                <div style={{ fontSize: 14, color: '#444' }}>Total</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginTop: 6 }}>{`₹${totalPrice}`}</div>
+              </div>
+            </div>
+
+            <Button className="proceed-btn" variant="contained" sx={{ width: '100%' }} disabled={selectedSeats.length === 0} onClick={openConfirm}>
+              PROCEED
             </Button>
+            <Dialog open={confirmOpen} onClose={closeConfirm} aria-labelledby="confirm-dialog-title">
+              <DialogTitle id="confirm-dialog-title">Confirm Booking</DialogTitle>
+              <DialogContent>
+                <div className="booking-summary">
+                  <div className="left">
+                    <Typography sx={{ mb: 1 }}>
+                      <strong>{movieTitle || 'this movie'}</strong>
+                    </Typography>
+                    <Typography sx={{ mb: 1, color: '#666' }}>
+                      {movieGenre}{movieDuration ? ' • ' + movieDuration : ''}
+                    </Typography>
+                    <Typography sx={{ mb: 1 }}>
+                      <strong>{selectedSeats.length}</strong> seats selected
+                    </Typography>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ color: '#666', marginBottom: 6 }}>Show</div>
+                      <div style={{ fontWeight: 700 }}>{showStart ? new Date(showStart).toLocaleString() : 'TBA'}</div>
+                      {showEnd ? <div style={{ color: '#666', fontSize: 13 }}>{new Date(showEnd).toLocaleTimeString()}</div> : null}
+                      {auditoriumName ? <div style={{ marginTop: 8, color: '#444' }}>Auditorium: <strong>{auditoriumName}</strong></div> : null}
+                    </div>
+                  </div>
+
+                  <div className="right">
+                    <div style={{ marginBottom: 10, color: '#666' }}>Seats</div>
+                    <div className="seats-list">
+                      {selectedSeatLabels.length ? selectedSeatLabels.map((s) => (
+                        <div key={s} className="seat-pill">{s}</div>
+                      )) : <div style={{ color: '#999' }}>No seats</div>}
+                    </div>
+
+                    <div style={{ marginTop: 12, borderTop: '1px solid #eee', paddingTop: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}>
+                        <div>Per-seat</div>
+                        <div>{`₹${priceRegular ?? 0} / ${pricePremium ?? 0}`}</div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontWeight: 700 }}>
+                        <div>Total</div>
+                        <div>{`₹${totalPrice}`}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+              <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={closeConfirm} sx={{ color: '#1976d2' }}>Cancel</Button>
+                <Button onClick={() => { closeConfirm(); proceedToPayment() }} variant="contained" sx={{ backgroundColor: '#f84464' }}>
+                  Proceed to Payment
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Box>
           </Box>
         </Box>
