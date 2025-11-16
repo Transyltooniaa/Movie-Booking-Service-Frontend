@@ -17,7 +17,8 @@ import { getToken } from './components/auth';
 
 function RequireAuth({ children }) {
   const token = getToken();
-  if (!token) return <Navigate to="/users/login" replace />
+  if (!token) 
+    return <Navigate to="/users/login" replace />
   return children
 }
 
@@ -25,12 +26,10 @@ function App() {
 
   return <>
   <Routes>
-  {/* Default to Movies page */}
-  <Route path='/' element={<Movies/>}/>
+  <Route path='/' element={<Login/>}/>
   <Route path='/users/signup' element={<Signup/>}/>
   <Route path='/users/login' element={<Login/>}/>
   <Route path='/bookmyshow/movies' element={<Movies/>}/>
-  {/* Protect interactive routes: details, query, seat layout, payment, bookings */}
   <Route path='/bookmyshow/movies/query' element={<RequireAuth><Query/></RequireAuth>}/>
   <Route path='/bookmyshow/movies/:id' element={<RequireAuth><Movie/></RequireAuth>}/>
   <Route path='/bookmyshow/seat-layout/:showId' element={<RequireAuth><SeatLayout/></RequireAuth>}/>

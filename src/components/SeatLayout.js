@@ -9,9 +9,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Typography from '@mui/material/Typography'
 
-// Simple seat layout mock similar to BookMyShow
 function SeatLayout() {
-  // read both movie id and show id from route params
   const { id, showId } = useParams()
   const [movie, setMovie] = useState(null)
   const [selectedSeats, setSelectedSeats] = useState([])
@@ -21,9 +19,7 @@ function SeatLayout() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const navigate = useNavigate()
 
-  // Consolidated initial load: fetch movie, show and pricing once and log the returned objects
   useEffect(() => {
-    // run when we have a showId; movie id is optional because show contains movieId
     if (!showId) return
     let mounted = true
 
@@ -31,16 +27,18 @@ function SeatLayout() {
       try {
         const results = {}
 
-        // fetch show first (contains pricing and movieId)
-        const showRes = await fetch(`/shows/${showId}`)
+        // Use root-relative path so it doesn't append to current route
+        const showRes = await fetch(`/movies/shows/${showId}`)
+        console.log("SHow Res", showRes)
+
         if (showRes && showRes.ok) {
           const ct = showRes.headers.get('content-type') || ''
           if (ct.includes('application/json')) results.show = await showRes.json()
         }
 
-        if (!mounted) return
+        if (!mounted) 
+          return
 
-        // set show and pricing immediately
         if (results.show) {
           setShow(results.show)
           const s = results.show
@@ -48,10 +46,10 @@ function SeatLayout() {
           setPricePremium(s.pricePremium ?? s.price_premium ?? s.pricepremium ?? null)
         }
 
-        // determine which movie id to fetch: prefer `id` param, otherwise use show.movieId
         const movieIdToFetch = id ?? results.show?.movieId ?? results.show?.movie_id ?? null
         if (movieIdToFetch) {
           const movieRes = await fetch(`/movies/${movieIdToFetch}`)
+          console.log(movieRes)
           if (movieRes && movieRes.ok) {
             const ct2 = movieRes.headers.get('content-type') || ''
             if (ct2.includes('application/json')) results.movie = await movieRes.json()
@@ -73,18 +71,14 @@ function SeatLayout() {
     return () => (mounted = false)
   }, [showId, id])
 
-  // Seat map configuration: rows are letters (A..Z) and columns are integers
-  const rowsCount = 12 // change this number to show more/less rows (max 26)
-  const seatsPerRow = 14 // number of seats per row
+  const rowsCount = 12 
+  const seatsPerRow = 14 
   const maxRows = Math.min(rowsCount, 26)
-  const rows = Array.from({ length: maxRows }, (_, i) => String.fromCharCode(65 + i)) // ['A','B',...]
+  const rows = Array.from({ length: maxRows }, (_, i) => String.fromCharCode(65 + i)) 
 
-  // Exactly 4 rows are premium at the back (per request)
   const premiumCount = Math.min(4, maxRows)
 
-  // helper to check sold seats (randomized but stable for the session)
   const isSold = (rIndex, sIndex) => {
-    // Deterministic pseudo-random so layout looks realistic for the demo
     return (rIndex * 31 + sIndex * 17 + (id ? id.length : 0)) % 7 === 0
   }
 

@@ -67,25 +67,17 @@ const getMovie = async () => {
 }
 
 const getShows = async () => {
+  // Use only the working endpoint: /movies/:id/shows (via API gateway)
   try {
-    // fetch shows (no auth for now). Use leading slash to respect proxy in dev.
-    const res = await fetch('/shows', { method: 'GET' })
-    if (!res.ok) return
+    const res = await fetch(`/movies/${id}/shows`, { method: 'GET' })
+    if (!res.ok) { setShows([]); return }
     const ct = res.headers.get('content-type') || ''
-    if (!ct.includes('application/json')) return
-    const data = await res.json()
-    // filter shows for this movie id (ShowDTO.movieId)
-    const movieId = Number(id)
-    const related = (data || []).filter((s) => {
-      // be permissive with field names: movieId, movie_id or nested movie object
-      const candidate = s.movieId ?? s.movie_id ?? (s.movie ? (s.movie.id ?? s.movie.movieId ?? s.movie) : undefined)
-      if (candidate == null) return false
-      return Number(candidate) === movieId
-    })
-    console.debug('shows fetched for movie', movieId, related)
-    setShows(related)
+    if (!ct.includes('application/json')) { setShows([]); return }
+    const list = await res.json()
+    setShows(Array.isArray(list) ? list : [])
   } catch (err) {
     console.warn('Error fetching shows', err)
+    setShows([])
   }
 }
 

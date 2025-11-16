@@ -7,7 +7,6 @@ export const API = "/";
 // Endpoint paths (adjust if your backend uses different routes)
 export const AUTH_SIGNIN = "auth/signin";
 export const AUTH_SIGNUP = "auth/signup";
-export const USERS_ME = "users/me"; // Returns current user using JWT
 
 // Helper to build URLs
 export const apiUrl = (path) => `${API}${path}`;

@@ -25,13 +25,12 @@ function Payment() {
 
   const posterFallback = bms
 
-  // load show -> then movie (show contains movieId and auditorium/pricing)
   useEffect(() => {
     if (!showId) return
     let mounted = true
     const load = async () => {
       try {
-        const res = await fetch(`/shows/${showId}`)
+        const res = await fetch(`/movies/shows/${showId}`)
         if (!res.ok) return
         const ct = res.headers.get('content-type') || ''
         if (!ct.includes('application/json')) return
@@ -39,7 +38,6 @@ function Payment() {
         if (!mounted) return
         setShow(s)
 
-        // fetch movie by id from show
         const movieId = s.movieId ?? s.movie_id ?? s.movie
         if (movieId) {
           const mres = await fetch(`/movies/${movieId}`)
@@ -64,11 +62,11 @@ function Payment() {
     // No client-side email collection; backend handles notifications.
     try {
       setLoading(true)
-      // selected is expected to be a comma-separated list of seatIds (URL-encoded)
       const seatsRaw = decodeURIComponent(selected || '')
       const seats = seatsRaw ? seatsRaw.split(',').map(s => s.trim()).filter(Boolean) : []
       const payload = { seats, amount: Number(total) }
-      const res = await fetch(`/shows/${showId}/book`, {
+      // Root-relative so JWT header is injected and proxy routes to gateway
+      const res = await fetch(`/movies/shows/${showId}/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -134,7 +132,7 @@ function Payment() {
             <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
               <Button variant="outlined" onClick={() => navigate(-1)} disabled={loading} sx={{ borderColor: '#bbb', color: '#222', px: 3 }}>Back</Button>
               <Button variant="contained" onClick={movieTicket} disabled={loading} sx={{ backgroundColor: '#f84464', boxShadow: '0 6px 18px rgba(248,68,100,0.22)', px: 3 }}>
-                {loading ? 'Processing...' : '  yment'}
+                {loading ? 'Processing...' : 'Payment'}
               </Button>
             </Box>
           </Grid>

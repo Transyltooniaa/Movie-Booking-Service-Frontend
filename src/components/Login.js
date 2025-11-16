@@ -9,8 +9,9 @@ import * as yup from "yup"
 import NavBar from './NavBar';
 import { ToastContainer, toast } from 'react-toastify';
 import { MyContext } from "../components/Context";
-import { apiUrl, AUTH_SIGNIN, USERS_ME } from './global/connect';
+import { apiUrl, AUTH_SIGNIN } from './global/connect';
 import { setToken } from './auth';
+import jwtDecode from 'jwt-decode';
 import bms from "../image/bms.png";
 
 
@@ -53,28 +54,26 @@ let addList = (loginUser) => {
     .then((res) => (res.ok ? res.json() : res.json().then((d) => Promise.reject(d))))
     .then((data) => {
       // AuthResponse: { token, role, message }
-      if (data?.token) {
-        console.log(data.token)
-        // Store with Bearer prefix so existing fetches work
-        setToken(`Bearer ${data.token}`);
-        if (data?.role) localStorage.setItem("role", data.role);
-        navigate('/bookmyshow/movies');
-
-        // // Load current user profile
-        // return fetch(apiUrl(USERS_ME), {
-        //   method: 'GET',
-        //   headers: { Authorization: (typeof localStorage !== 'undefined' ? localStorage.getItem('Authorization') : null) || '' },
-        // })
-        //   .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-        //   .then((userDetail) => {
-        //     setUser(userDetail);
-        //     // Optional: store email for legacy usages
-        //     if (userDetail?.email) localStorage.setItem('email', userDetail.email);
-        //     // Navigate to movies page for all users
-        //     navigate('/bookmyshow/movies');
-        //   });
+      if (!data?.token) {
+        return Promise.reject({ message: data?.message || 'Login failed' });
       }
-      return Promise.reject({ message: data?.message || 'Login failed' });
+
+      // Store token and role
+      setToken(`Bearer ${data.token}`);
+      if (data?.role) localStorage.setItem('role', data.role);
+
+      // No /users/me endpoint: decode JWT for basic identity
+      try {
+        const decoded = jwtDecode(data.token);
+        const email = decoded?.email || decoded?.sub || decoded?.username;
+        const role = data?.role || decoded?.role;
+        const userDetail = { email, role };
+        setUser(userDetail);
+        if (email) localStorage.setItem('email', email);
+      } catch {}
+
+      navigate('/bookmyshow/movies');
+      return; // stop chain
     })
     .catch((err) => {
       const msg = err?.message || 'Unable to login';
