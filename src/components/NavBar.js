@@ -1,5 +1,5 @@
 import React, {useContext} from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -9,6 +9,7 @@ import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
 import { MyContext } from "../components/Context";
 import { clearToken, getToken } from './auth';
@@ -25,6 +26,9 @@ function NavBar() {
   const token = getToken()
 
  let navigate = useNavigate();
+ const location = useLocation();
+
+ const isActive = (pathPrefix) => location.pathname.startsWith(pathPrefix);
 
  let logOut = () => {
   clearToken()
@@ -103,18 +107,36 @@ function NavBar() {
             >
                 <MenuItem sx={{display:'flex',flexDirection:{xs:'column'},gap:2}} onClick={handleCloseNavMenu}>
                 {/* Movies visible always */}
-                <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/bookmyshow/movies')}>Movies</Typography>
-                {token ?  <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/users/bookings')}>MyBookings</Typography> : null}
+                <MenuItem onClick={() => { handleCloseNavMenu(); navigate('/bookmyshow/movies'); }}>
+                  <Typography sx={{fontSize:"14px",fontWeight:600, color: isActive('/bookmyshow/movies') ? '#f84464' : 'inherit'}}>Movies</Typography>
+                </MenuItem>
+                {token ? (
+                  <MenuItem onClick={() => { handleCloseNavMenu(); navigate('/users/bookings'); }}>
+                    <Typography sx={{fontSize:"14px",fontWeight:600, color: isActive('/users/bookings') ? '#f84464' : 'inherit'}}>My Bookings</Typography>
+                  </MenuItem>
+                ) : null}
 
                 {
-                  token ? null :  <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/users/signup')}>Signup</Typography>
+                  token ? null :  (
+                    <MenuItem onClick={() => { handleCloseNavMenu(); navigate('/users/signup'); }}>
+                      <Typography sx={{fontSize:"14px",fontWeight:600, color: isActive('/users/signup') ? '#f84464' : 'inherit'}}>Signup</Typography>
+                    </MenuItem>
+                  )
                 }
                   {
-                    token ? <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={logOut}>Logout</Typography>
-                    :
-                    <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/users/login')}>Login</Typography>
+                    token ? (
+                      <MenuItem onClick={() => { handleCloseNavMenu(); logOut(); }}>
+                        <Typography sx={{fontSize:"14px",fontWeight:600}}>Logout</Typography>
+                      </MenuItem>
+                    ) : (
+                      <MenuItem onClick={() => { handleCloseNavMenu(); navigate('/users/login'); }}>
+                        <Typography sx={{fontSize:"14px",fontWeight:600, color: isActive('/users/login') ? '#f84464' : 'inherit'}}>Login</Typography>
+                      </MenuItem>
+                    )
                   }
-                  {token && <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={logOut}>{user?.fullname || user?.fullName || user?.email}</Typography>}
+                  {token && (
+                    <Typography sx={{fontSize:"12px",opacity:0.85, mt:1}}>{user?.fullname || user?.fullName || user?.email}</Typography>
+                  )}
                   
                 </MenuItem>
               
@@ -151,26 +173,53 @@ function NavBar() {
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
           </Box>
 
-          <Box>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems:'center', gap: 2 }}>
               <Button
-                onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: 'white',display: { xs: 'none', md: 'flex' },flexDirection:{xs:'none',md:'row'},gap:4 }}
+                component={RouterLink}
+                to="/bookmyshow/movies"
+                color="inherit"
+                sx={{ textTransform:'none', fontWeight:700, color: isActive('/bookmyshow/movies') ? '#f84464' : 'white', '&:hover':{ color:'#ff6b81' } }}
               >
-                {/* Movies visible always */}
-                <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/bookmyshow/movies')}>Movies</Typography>
-                {token ?  <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/users/bookings')}>MyBookings</Typography> : null}
-
-                {
-                  token ? null :  <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/users/signup')}>Signup</Typography>
-                }
-                 
-                  {
-                    token ? <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={logOut}>Logout</Typography>
-                    :
-                    <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={() => navigate('/users/login')}>Login</Typography>
-                  }
-                  {token && <Typography sx={{fontSize:"14px",fontWeight:500}} onClick={logOut}>{user?.fullname || user?.fullName || user?.email}</Typography>}
+                Movies
               </Button>
+              {token && (
+                <Button
+                  component={RouterLink}
+                  to="/users/bookings"
+                  color="inherit"
+                  sx={{ textTransform:'none', fontWeight:700, color: isActive('/users/bookings') ? '#f84464' : 'white', '&:hover':{ color:'#ff6b81' } }}
+                >
+                  My Bookings
+                </Button>
+              )}
+
+              {!token && (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/users/signup"
+                    color="inherit"
+                    sx={{ textTransform:'none', fontWeight:700, color: isActive('/users/signup') ? '#f84464' : 'white', '&:hover':{ color:'#ff6b81' } }}
+                  >
+                    Signup
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/users/login"
+                    color="inherit"
+                    sx={{ textTransform:'none', fontWeight:700, color: isActive('/users/login') ? '#f84464' : 'white', '&:hover':{ color:'#ff6b81' } }}
+                  >
+                    Login
+                  </Button>
+                </>
+              )}
+
+              {token && (
+                <>
+                  <Typography sx={{fontSize:"13px",opacity:0.85}}>{user?.fullname || user?.fullName || user?.email}</Typography>
+                  <Button onClick={logOut} color="inherit" sx={{ textTransform:'none', fontWeight:700, '&:hover':{ color:'#ff6b81' } }}>Logout</Button>
+                </>
+              )}
           </Box>
         </Toolbar>
       </Container>
