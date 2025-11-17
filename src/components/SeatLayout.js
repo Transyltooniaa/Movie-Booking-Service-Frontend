@@ -21,12 +21,16 @@ function SeatLayout() {
 
   const [bookedSeatIds, setBookedSeatIds] = useState([])
   const [lockedSeatIds, setLockedSeatIds] = useState([])
+  const [pendingBooking, setPendingBooking] = useState(null) // 👈 new
 
   const navigate = useNavigate()
 
   useEffect(() => {
     if (!showId) return
     let mounted = true
+
+    // Clear any stale selection when revisiting this page
+    setSelectedSeats([])
 
     const loadInitialData = async () => {
       try {
@@ -49,7 +53,8 @@ function SeatLayout() {
         }
 
         // 2) Movie
-        const movieIdToFetch = id ?? results.show?.movieId ?? results.show?.movie_id ?? null
+        const movieIdToFetch =
+          id ?? results.show?.movieId ?? results.show?.movie_id ?? null
         if (movieIdToFetch) {
           const movieRes = await fetch(`/movies/${movieIdToFetch}`)
           if (movieRes && movieRes.ok) {
@@ -78,6 +83,25 @@ function SeatLayout() {
           console.warn('Could not load seat status', e)
         }
 
+        // 4) Check if user already has a PENDING booking for this show
+        try {
+          const myRes = await fetch('/bookings/my', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          if (myRes && myRes.ok) {
+            const myBookings = await myRes.json()
+            if (!mounted) return
+            const pb = myBookings.find(
+              (b) =>
+                String(b.showId) === String(showId) &&
+                b.status === 'PENDING_PAYMENT'
+            )
+            setPendingBooking(pb || null)
+          }
+        } catch (e) {
+          console.warn('Could not load my bookings to check pending one', e)
+        }
 
         console.log('SeatLayout initial load:', results)
       } catch (err) {
@@ -92,7 +116,9 @@ function SeatLayout() {
   const rowsCount = 12
   const seatsPerRow = 14
   const maxRows = Math.min(rowsCount, 26)
-  const rows = Array.from({ length: maxRows }, (_, i) => String.fromCharCode(65 + i))
+  const rows = Array.from({ length: maxRows }, (_, i) =>
+    String.fromCharCode(65 + i)
+  )
 
   const premiumCount = Math.min(4, maxRows)
 
@@ -113,9 +139,7 @@ function SeatLayout() {
     const r = key.split('-')[0]
     const rIdx = rows.indexOf(r)
     const isPremiumRow = rIdx >= maxRows - premiumCount
-    const seatPrice = Number(
-      isPremiumRow ? (pricePremium ?? 0) : (priceRegular ?? 0)
-    )
+    const seatPrice = Number(isPremiumRow ? (pricePremium ?? 0) : (priceRegular ?? 0))
     return acc + seatPrice
   }, 0)
 
@@ -132,10 +156,19 @@ function SeatLayout() {
     })
   }
 
-  const selectedSeatIds = computeSeatIds()
-  const selectedSeatLabels = selectedSeats.slice().sort((a, b) => a.localeCompare(b))
+  const selectedSeatLabels = selectedSeats
+    .slice()
+    .sort((a, b) => a.localeCompare(b))
 
   const proceedToPayment = async () => {
+    // Guard: don’t create a duplicate booking if one is already pending
+    if (pendingBooking) {
+      alert(
+        'You already have a pending booking for this show. Please complete or cancel it from MyBookings.'
+      )
+      return
+    }
+
     try {
       setBookingLoading(true)
 
@@ -147,7 +180,9 @@ function SeatLayout() {
         const isPremiumRow = rIdx >= maxRows - premiumCount
         const seatId = rIdx * seatsPerRow + (seatNumber - 1) + 1
         const seatType = isPremiumRow ? 'PREMIUM' : 'REGULAR'
-        const price = Number(isPremiumRow ? (pricePremium ?? 0) : (priceRegular ?? 0))
+        const price = Number(
+          isPremiumRow ? (pricePremium ?? 0) : (priceRegular ?? 0)
+        )
 
         return {
           seatId,
@@ -168,8 +203,7 @@ function SeatLayout() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-          // Authorization header (JWT) is assumed to be added globally or by browser;
-          // X-User-Email is added at the gateway side.
+          // Authorization token is handled globally; X-User-Email injected by gateway
         },
         body: JSON.stringify(payload)
       })
@@ -182,10 +216,7 @@ function SeatLayout() {
       }
 
       const booking = await res.json() // BookingResponse from backend
-
       setBookingLoading(false)
-
-      // Frontend does not keep pending booking guard; backend lock handles this
 
       const auditorium =
         show?.auditorium ??
@@ -199,7 +230,6 @@ function SeatLayout() {
       const selectedParam = encodeURIComponent(computeSeatIds().join(','))
       const totalParam = totalPrice
 
-      // navigate to payment with bookingId in state
       navigate(
         `/bookmyshow/payment/${encodeURIComponent(
           auditorium
@@ -220,7 +250,6 @@ function SeatLayout() {
       setBookingLoading(false)
     }
   }
-
 
   const movieTitle = movie?.title ?? movie?.name ?? ''
   const movieGenre = movie?.genre ?? movie?.type ?? ''
@@ -254,7 +283,6 @@ function SeatLayout() {
             maxWidth: 1200
           }}
         >
-          
           <Box sx={{ width: '100%', maxWidth: 920 }}>
             <h3 style={{ textAlign: 'left', marginBottom: 6 }}>
               {movieTitle || 'Select seats'}
@@ -322,7 +350,7 @@ function SeatLayout() {
                       >
                         {Array.from({ length: seatsPerRow }).map((_, sIdx) => {
                           const seatNum = sIdx + 1
-                          const seatId = rIdx * seatsPerRow + seatNum // + seatNum already accounts for +1
+                          const seatId = rIdx * seatsPerRow + seatNum
                           const unavailable = isSeatUnavailable(seatId)
                           const key = `${r}-${seatNum}`
                           const selected = selectedSeats.includes(key)
@@ -356,8 +384,7 @@ function SeatLayout() {
                           const selectedStyle = selected
                             ? {
                                 transform: 'translateY(-6px) scale(1.03)',
-                                boxShadow:
-                                  '0 14px 30px rgba(3,22,61,0.12)'
+                                boxShadow: '0 14px 30px rgba(3,22,61,0.12)'
                               }
                             : {}
 
@@ -388,9 +415,7 @@ function SeatLayout() {
                               data-seat-id={seatId}
                               className={seatClass}
                               style={style}
-                              onClick={() =>
-                                toggleSeat(r, seatNum, rIdx, sIdx)
-                              }
+                              onClick={() => toggleSeat(r, seatNum, rIdx, sIdx)}
                               title={`${r}${seatNum} — id:${seatId}`}
                             >
                               {seatNum}
@@ -497,6 +522,37 @@ function SeatLayout() {
               gap: 2
             }}
           >
+            {/* Pending booking banner */}
+            {pendingBooking && (
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  background: '#fff3cd',
+                  border: '1px solid #ffeeba',
+                  fontSize: 12,
+                  color: '#856404'
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                  Pending booking exists
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  You already have a pending booking for this show (Booking #
+                  {pendingBooking.id}). Please complete payment or cancel it
+                  from MyBookings.
+                </div>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate('/users/bookings')}
+                  sx={{ borderColor: '#856404', color: '#856404' }}
+                >
+                  Go to MyBookings
+                </Button>
+              </div>
+            )}
+
             <div className="right-panel" style={{ width: '100%' }}>
               <div
                 style={{
@@ -525,7 +581,10 @@ function SeatLayout() {
               </div>
             </div>
 
-            <div className="right-panel" style={{ width: '100%', textAlign: 'center' }}>
+            <div
+              className="right-panel"
+              style={{ width: '100%', textAlign: 'center' }}
+            >
               <div
                 style={{
                   width: '100%',
@@ -565,11 +624,16 @@ function SeatLayout() {
               className="proceed-btn"
               variant="contained"
               sx={{ width: '100%' }}
-              disabled={selectedSeats.length === 0 || bookingLoading}
+              disabled={
+                selectedSeats.length === 0 ||
+                bookingLoading ||
+                !!pendingBooking
+              }
               onClick={openConfirm}
             >
               {bookingLoading ? 'Creating booking...' : 'PROCEED'}
             </Button>
+
             <Dialog
               open={confirmOpen}
               onClose={closeConfirm}
@@ -597,11 +661,7 @@ function SeatLayout() {
                         lineHeight: 1.45
                       }}
                     >
-                      <div
-                        style={{ color: '#666', marginBottom: 6 }}
-                      >
-                        Show
-                      </div>
+                      <div style={{ color: '#666', marginBottom: 6 }}>Show</div>
                       <div
                         style={{
                           fontWeight: 700,
@@ -621,8 +681,7 @@ function SeatLayout() {
                             marginBottom: 6
                           }}
                         >
-                          End:{' '}
-                          {new Date(showEnd).toLocaleString()}
+                          End: {new Date(showEnd).toLocaleString()}
                         </div>
                       ) : null}
                       {auditoriumName ? (
@@ -727,7 +786,7 @@ function SeatLayout() {
                   }}
                   variant="contained"
                   sx={{ backgroundColor: '#f84464' }}
-                  disabled={bookingLoading}
+                  disabled={bookingLoading || !!pendingBooking}
                 >
                   Proceed to Payment
                 </Button>
@@ -741,3 +800,4 @@ function SeatLayout() {
 }
 
 export default SeatLayout
+g
