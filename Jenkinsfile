@@ -1,76 +1,44 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
-        DOCKERHUB_REPO = 'ketan803/movie-frontend'
-        IMAGE_TAG = "latest"
+    tools {
+        nodejs 'Node18'   // 👈 this must match the name in Manage Jenkins → Tools
     }
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                echo "Pulling code from GitHub..."
-                checkout scm
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
-                echo "Running npm install..."
+                sh 'node -v'
+                sh 'npm -v'
                 sh 'npm install'
             }
         }
 
         stage('Build React App') {
             steps {
-                echo "Building frontend..."
                 sh 'npm run build'
             }
         }
 
         stage('Docker Build') {
             steps {
-                echo "Building Docker image..."
-                sh 'docker build -t $DOCKERHUB_REPO:$IMAGE_TAG .'
+                sh 'docker build -t ketan803/movie-frontend:${BUILD_NUMBER} .'
             }
         }
 
-        stage('Docker Login') {
+        stage('Docker Push') {
             steps {
-                echo "Logging into DockerHub..."
-                withCredentials([usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh 'echo "$PASS" | docker login -u "$USER" --password-stdin'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ketan803/movie-frontend:${BUILD_NUMBER}
+                    '''
                 }
             }
-        }
-
-        stage('Push Image') {
-            steps {
-                echo "Pushing image to DockerHub..."
-                sh 'docker push $DOCKERHUB_REPO:$IMAGE_TAG'
-            }
-        }
-
-        stage('Deploy (Local)') {
-            when { expression { return true } } // change to false if you don't want deploy
-            steps {
-                echo "Stopping old container..."
-                sh 'docker rm -f movie-frontend || true'
-
-                echo "Starting frontend container..."
-                sh 'docker run -d -p 3000:80 --name movie-frontend $DOCKERHUB_REPO:$IMAGE_TAG'
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Frontend pipeline executed successfully!"
-        }
-        failure {
-            echo "Pipeline failed."
         }
     }
 }
