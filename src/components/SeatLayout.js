@@ -8,6 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Typography from '@mui/material/Typography'
+import { getToken } from "./auth";
 
 function SeatLayout() {
   const { id, showId } = useParams()
@@ -37,7 +38,13 @@ function SeatLayout() {
         const results = {}
 
         // 1) Show
-        const showRes = await fetch(`/movies/shows/${showId}`)
+        const API = process.env.REACT_APP_API_URL
+        const token = getToken()
+        const showRes = await fetch(`${API}/movies/shows/${showId}`, {
+          headers: {
+            "Authorization": token
+          }
+        })
         if (showRes && showRes.ok) {
           const ct = showRes.headers.get('content-type') || ''
           if (ct.includes('application/json')) results.show = await showRes.json()
@@ -56,7 +63,13 @@ function SeatLayout() {
         const movieIdToFetch =
           id ?? results.show?.movieId ?? results.show?.movie_id ?? null
         if (movieIdToFetch) {
-          const movieRes = await fetch(`/movies/${movieIdToFetch}`)
+          const API = process.env.REACT_APP_API_URL
+          const token = getToken()
+          const movieRes = await fetch(`${API}/movies/${movieIdToFetch}`, {
+            headers: {
+              "Authorization": token
+            }
+          })
           if (movieRes && movieRes.ok) {
             const ct2 = movieRes.headers.get('content-type') || ''
             if (ct2.includes('application/json')) results.movie = await movieRes.json()
@@ -69,7 +82,13 @@ function SeatLayout() {
 
         // 3) Seat status from booking-service
         try {
-          const statusRes = await fetch(`/bookings/show/${showId}/seats/status`)
+          const API = process.env.REACT_APP_API_URL
+          const token = getToken()
+          const statusRes = await fetch(`${API}/bookings/show/${showId}/seats/status`, {
+            headers: {
+              "Authorization": token
+            }
+          })
           if (statusRes && statusRes.ok) {
             const ct3 = statusRes.headers.get('content-type') || ''
             if (ct3.includes('application/json')) {
@@ -85,9 +104,13 @@ function SeatLayout() {
 
         // 4) Check if user already has a PENDING booking for this show
         try {
-          const myRes = await fetch('/bookings/my', {
+          const API = process.env.REACT_APP_API_URL
+          const token = getToken()
+          const myRes = await fetch(`${API}/bookings/my`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json'
+              , "Authorization": token
+             }
           })
           if (myRes && myRes.ok) {
             const myBookings = await myRes.json()
@@ -198,11 +221,13 @@ function SeatLayout() {
         totalAmount: totalPrice,
         seats: seatsPayload
       }
-
-      const res = await fetch(`/bookings/create`, {
+      const API = process.env.REACT_APP_API_URL
+      const token = getToken()
+      const res = await fetch(`${API}/bookings/create`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          "Authorization": token
           // Authorization token is handled globally; X-User-Email injected by gateway
         },
         body: JSON.stringify(payload)

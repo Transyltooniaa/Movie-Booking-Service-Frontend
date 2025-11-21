@@ -12,6 +12,7 @@ import Tooltip from "@mui/material/Tooltip";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import NavBar from "./NavBar";
 import { motion, AnimatePresence } from "framer-motion";
+import { getToken } from "./auth";
 
 // Approximate lock TTL (same as backend BookingService.LOCK_TTL)
 const LOCK_TTL_SECONDS = 600; // 10 minutes
@@ -55,10 +56,13 @@ export default function MyBookings() {
   const loadBookings = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetch("/bookings/my", {
+      const API = process.env.REACT_APP_API_URL
+      const token = getToken()
+      const res = await fetch(`${API}/bookings/my`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": token, 
         },
       });
 
@@ -89,7 +93,7 @@ export default function MyBookings() {
       setError("Something went wrong while loading your bookings.");
       setLoading(false);
     }
-  }, [createdMap]);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -115,7 +119,13 @@ export default function MyBookings() {
 
       (async () => {
         try {
-          const res = await fetch(`/movies/shows/${showId}`);
+          const API = process.env.REACT_APP_API_URL
+          const token = getToken()
+          const res = await fetch(`${API}/movies/shows/${showId}`, {
+            headers: {
+              "Authorization": token, 
+            }
+          });
           if (!res.ok) return;
           const ct = res.headers.get("content-type") || "";
           if (!ct.includes("application/json")) return;
@@ -205,10 +215,13 @@ export default function MyBookings() {
     if (!confirm) return;
 
     try {
-      const res = await fetch(`/bookings/${bookingId}/cancel`, {
+      const API = process.env.REACT_APP_API_URL
+      const token = getToken()
+      const res = await fetch(`${API}/bookings/${bookingId}/cancel`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": token, 
         },
       });
 
