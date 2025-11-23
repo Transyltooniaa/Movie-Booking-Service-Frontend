@@ -800,4 +800,3 @@ function SeatLayout() {
 }
 
 export default SeatLayout
-g

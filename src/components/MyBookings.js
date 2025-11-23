@@ -89,7 +89,7 @@ export default function MyBookings() {
       setError("Something went wrong while loading your bookings.");
       setLoading(false);
     }
-  }, [createdMap]);
+  }, []);
 
   // Initial load
   useEffect(() => {
