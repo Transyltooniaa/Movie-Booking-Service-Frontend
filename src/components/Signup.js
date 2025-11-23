@@ -44,8 +44,9 @@ function Signup() {
     let addUser = (newList) => {
       setLoading(true);
       const slowTimer = setTimeout(() => toast.info('Creating your account…'), 1200);
-      fetch(apiUrl(AUTH_SIGNUP),{
-        method:"POST",
+      const API = process.env.REACT_APP_API_URL;
+      fetch(`${API}/auth/signup`,{
+        method:"POST", 
         body: JSON.stringify({
           fullname: newList.fullname,
           email: newList.email,

@@ -35,7 +35,8 @@ function Query() {
 
   let addUser = (queryList) => {
         // Assuming query endpoint belongs to movie service
-        fetch("/movies/queries",{
+        const API = process.env.REACT_APP_API_URL;
+        fetch(`${API}/movies/queries`,{
           method:"POST",
           body: JSON.stringify(queryList),
           headers: {

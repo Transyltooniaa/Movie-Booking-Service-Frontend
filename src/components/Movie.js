@@ -8,6 +8,7 @@ import Paper from '@mui/material/Paper';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import NavBar from './NavBar';
+import { getToken } from './auth';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
@@ -25,7 +26,16 @@ let navigate = useNavigate()
 
 const getMovie = async () => {
   try {
-    const res = await fetch(`/movies/${id}`, { method: 'GET' })
+    const API = process.env.REACT_APP_API_URL;
+    const token = getToken();
+
+    const res = await fetch(`${API}/movies/${id}`, {
+      method: 'GET',
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json",
+      }
+    })
 
     // If response is not OK, log and set empty movie to avoid crashing the UI
     if (!res.ok) {
@@ -69,7 +79,15 @@ const getMovie = async () => {
 const getShows = async () => {
   // Use only the working endpoint: /movies/:id/shows (via API gateway)
   try {
-    const res = await fetch(`/movies/${id}/shows`, { method: 'GET' })
+    const token = getToken();
+    const API = process.env.REACT_APP_API_URL;
+    const res = await fetch(`${API}/movies/${id}/shows`, {
+      method: "GET",
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      }
+    });
     if (!res.ok) { setShows([]); return }
     const ct = res.headers.get('content-type') || ''
     if (!ct.includes('application/json')) { setShows([]); return }

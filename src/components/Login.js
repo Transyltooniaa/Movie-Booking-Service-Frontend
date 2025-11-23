@@ -28,7 +28,7 @@ const formValidationSchema = yup.object({
 })
 
 function Login() {
-
+const API = process.env.REACT_APP_API_URL;
 let {setUser} = useContext(MyContext), 
 navigate=useNavigate();
 
@@ -51,7 +51,7 @@ let addList = (loginUser) => {
   const slowTimer = setTimeout(() => {
     toast.info('Signing you in… one moment');
   }, 1200);
-  fetch(apiUrl(AUTH_SIGNIN), {
+  fetch(`${API}/auth/signin`, {
     method: "POST",
     body: JSON.stringify({
       email: loginUser.email,

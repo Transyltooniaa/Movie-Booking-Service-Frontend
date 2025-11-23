@@ -18,22 +18,37 @@ function Movies() {
   const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   useEffect(() => {
-    if (moviesCache.data.length > 0 && Date.now() - moviesCache.fetchedAt < CACHE_TTL_MS) {
-      setMovies(moviesCache.data);
-      setLoading(false);
-      return;
+  if (
+    moviesCache.data.length > 0 &&
+    Date.now() - moviesCache.fetchedAt < CACHE_TTL_MS
+  ) {
+    setMovies(moviesCache.data);
+    setLoading(false);
+    return;
+  }
+
+  const API = process.env.REACT_APP_API_URL;
+  const token = getToken(); // <--- GET JWT TOKEN
+
+  setLoading(true);
+
+  fetch(`${API}/movies`, {
+    headers: {
+      "Authorization": token,      // <--- SEND JWT
+      "Content-Type": "application/json"
     }
-    setLoading(true);
-    fetch('/movies')
-      .then(res => res.json())
-      .then(data => {
-        setMovies(data);
-        setMoviesCache({ data, fetchedAt: Date.now() });
-      })
-      .catch(err => console.error('Error fetching movies:', err))
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  })
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      setMovies(data);
+      setMoviesCache({ data, fetchedAt: Date.now() });
+    })
+    .catch(err => console.error("Error fetching movies:", err))
+    .finally(() => setLoading(false));
+}, []);
 
   const nowShowing = movies.filter((m) => m.active);
   const comingSoon = movies.filter((m) => !m.active);

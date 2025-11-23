@@ -6,7 +6,7 @@ import NavBar from './NavBar';
 
 
 function Bookings() {
-
+    const API = process.env.REACT_APP_API_URL;
     const { id,theaterId } = useParams()
     let [movie,setMovie] = useState([])
     let [show,setShow] = useState([])
@@ -15,7 +15,7 @@ function Bookings() {
     const token = localStorage.getItem("Authorization")
 
     const getMovie = () => {
-      fetch(`/movies/${id}`, {
+      fetch(`${API}/movies/${id}`, {
         method: "GET",
         headers: {
           Authorization: localStorage.getItem("Authorization") || '',

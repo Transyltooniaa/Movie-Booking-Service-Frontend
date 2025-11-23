@@ -8,6 +8,7 @@ import {useParams, useNavigate, useLocation} from 'react-router-dom'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import NavBar from './NavBar';
+import { getToken } from './auth';
 import bms from "../image/bms.png";
 
 function Payment() {
@@ -36,17 +37,33 @@ function Payment() {
     let mounted = true
     const load = async () => {
       try {
-        const res = await fetch(`/movies/shows/${showId}`)
-        if (!res.ok) return
-        const ct = res.headers.get('content-type') || ''
-        if (!ct.includes('application/json')) return
-        const s = await res.json()
-        if (!mounted) return
-        setShow(s)
+        const API = process.env.REACT_APP_API_URL;
+        const token = getToken();  // <-- add this above
+        const res = await fetch(`${API}/movies/shows/${showId}`, {
+          headers: {
+            "Authorization": token,
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!res.ok) return;
+
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) return;
+
+        const s = await res.json();
+        if (!mounted) return;
 
         const movieId = s.movieId ?? s.movie_id ?? s.movie
         if (movieId) {
-          const mres = await fetch(`/movies/${movieId}`)
+          const API = process.env.REACT_APP_API_URL;
+          const token = getToken();
+          const mres = await fetch(`${API}/movies/${movieId}`, {
+            headers: {
+              "Authorization": token,
+              "Content-Type": "application/json"
+            }
+          });
           if (mres && mres.ok) {
             const mct = mres.headers.get('content-type') || ''
             if (mct.includes('application/json')) {
@@ -77,10 +94,12 @@ function Payment() {
         bookingId: bookingIdFromState,
         amount: amountFromState
       }
-
-      const res = await fetch(`/payment/pay`, {
+      const API = process.env.REACT_APP_API_URL;
+      const token = getToken();
+      const res = await fetch(`${API}/payment/pay`, {
         method: 'POST',
         headers: {
+          'Authorization': token,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
