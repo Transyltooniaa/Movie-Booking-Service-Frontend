@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movie-frontend
+  namespace: movie-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: movie-frontend
+  template:
+    metadata:
+      labels:
+        app: movie-frontend
+    spec:
+      containers:
+        - name: movie-frontend
+          image: movie-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80

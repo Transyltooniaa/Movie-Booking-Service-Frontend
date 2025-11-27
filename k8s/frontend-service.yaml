@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: movie-frontend
+  namespace: movie-app
+spec:
+  selector:
+    app: movie-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
