@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: movie-frontend
-          image: movie-frontend:latest
-          imagePullPolicy: Never
+          image: ketan803/movie-frontend:main-1
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
