@@ -15,7 +15,7 @@ function AppContext({ children }) {
       const raw = token.replace(/^Bearer\s+/i, '');
       const decoded = jwtDecode(raw);
       const email = decoded?.email || decoded?.sub || decoded?.username;
-      const role = localStorage.getItem('role') || decoded?.role;
+      const role = sessionStorage.getItem('role') || decoded?.role || 'USER';
       if (email) setUser({ email, role });
     } catch (e) {
       clearToken();

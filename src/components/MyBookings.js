@@ -36,7 +36,8 @@ export default function MyBookings() {
   // Load locally stored created-at timestamps for countdowns
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("bms_bookingCreatedAtMap");
+      // const raw = localStorage.getItem("bms_bookingCreatedAtMap");
+      const raw = sessionStorage.getItem("bms_bookingCreatedAtMap");
       if (raw) {
         setCreatedMap(JSON.parse(raw));
       }
@@ -47,7 +48,8 @@ export default function MyBookings() {
 
   const persistCreatedMap = (map) => {
     try {
-      localStorage.setItem("bms_bookingCreatedAtMap", JSON.stringify(map));
+      // localStorage.setItem("bms_bookingCreatedAtMap", JSON.stringify(map));
+      sessionStorage.setItem("bms_bookingCreatedAtMap", JSON.stringify(map));
     } catch (e) {
       console.warn("Could not persist bookingCreatedAtMap", e);
     }

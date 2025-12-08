@@ -32,7 +32,10 @@ function NavBar() {
 
  let logOut = () => {
   clearToken()
-  localStorage.removeItem("email")
+  // localStorage.removeItem("email")
+  // localStorage.removeItem("role")
+  sessionStorage.removeItem("email")
+  sessionStorage.removeItem("role")
   navigate('/users/login')
  }
 
