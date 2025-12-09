@@ -38,7 +38,7 @@ function SeatLayout() {
         const results = {}
 
         // 1) Show
-        const API = process.env.REACT_APP_API_URL
+        const API = process.env.REACT_APP_API_URL || "";
         const token = getToken()
         const showRes = await fetch(`${API}/movies/shows/${showId}`, {
           headers: {
@@ -63,7 +63,7 @@ function SeatLayout() {
         const movieIdToFetch =
           id ?? results.show?.movieId ?? results.show?.movie_id ?? null
         if (movieIdToFetch) {
-          const API = process.env.REACT_APP_API_URL
+          const API = process.env.REACT_APP_API_URL || "";
           const token = getToken()
           const movieRes = await fetch(`${API}/movies/${movieIdToFetch}`, {
             headers: {
@@ -82,7 +82,7 @@ function SeatLayout() {
 
         // 3) Seat status from booking-service
         try {
-          const API = process.env.REACT_APP_API_URL
+          const API = process.env.REACT_APP_API_URL || "";
           const token = getToken()
           const statusRes = await fetch(`${API}/bookings/show/${showId}/seats/status`, {
             headers: {
@@ -104,7 +104,7 @@ function SeatLayout() {
 
         // 4) Check if user already has a PENDING booking for this show
         try {
-          const API = process.env.REACT_APP_API_URL
+          const API = process.env.REACT_APP_API_URL || "";
           const token = getToken()
           const myRes = await fetch(`${API}/bookings/my`, {
             method: 'GET',
@@ -221,7 +221,7 @@ function SeatLayout() {
         totalAmount: totalPrice,
         seats: seatsPayload
       }
-      const API = process.env.REACT_APP_API_URL
+      const API = process.env.REACT_APP_API_URL || "";
       const token = getToken()
       const res = await fetch(`${API}/bookings/create`, {
         method: 'POST',

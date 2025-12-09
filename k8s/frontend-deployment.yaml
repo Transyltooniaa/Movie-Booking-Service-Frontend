@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: movie-frontend
-          image: ketan803/movie-frontend:5
+          image: transyltoonia/movie-frontend:5
           imagePullPolicy: Always
           ports:
             - containerPort: 80

@@ -6,7 +6,7 @@ import NavBar from './NavBar';
 
 
 function Bookings() {
-    const API = process.env.REACT_APP_API_URL;
+    const API = process.env.REACT_APP_API_URL || "";
     const { id,theaterId } = useParams()
     let [movie,setMovie] = useState([])
     let [show,setShow] = useState([])

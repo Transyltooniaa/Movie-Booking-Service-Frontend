@@ -26,7 +26,7 @@ let navigate = useNavigate()
 
 const getMovie = async () => {
   try {
-    const API = process.env.REACT_APP_API_URL;
+    const API = process.env.REACT_APP_API_URL || "";
     const token = getToken();
 
     const res = await fetch(`${API}/movies/${id}`, {
@@ -80,7 +80,7 @@ const getShows = async () => {
   // Use only the working endpoint: /movies/:id/shows (via API gateway)
   try {
     const token = getToken();
-    const API = process.env.REACT_APP_API_URL;
+    const API = process.env.REACT_APP_API_URL || "";
     const res = await fetch(`${API}/movies/${id}/shows`, {
       method: "GET",
       headers: {

@@ -27,7 +27,7 @@ function Movies() {
     return;
   }
 
-  const API = process.env.REACT_APP_API_URL;
+  const API = process.env.REACT_APP_API_URL || "";
   const token = getToken(); // <--- GET JWT TOKEN
 
   setLoading(true);

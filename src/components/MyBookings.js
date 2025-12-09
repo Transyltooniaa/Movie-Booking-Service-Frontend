@@ -56,7 +56,7 @@ export default function MyBookings() {
   const loadBookings = useCallback(async () => {
     try {
       setError(null);
-      const API = process.env.REACT_APP_API_URL
+      const API = process.env.REACT_APP_API_URL || "";
       const token = getToken()
       const res = await fetch(`${API}/bookings/my`, {
         method: "GET",
@@ -119,7 +119,7 @@ export default function MyBookings() {
 
       (async () => {
         try {
-          const API = process.env.REACT_APP_API_URL
+          const API = process.env.REACT_APP_API_URL || "";
           const token = getToken()
           const res = await fetch(`${API}/movies/shows/${showId}`, {
             headers: {
@@ -215,7 +215,7 @@ export default function MyBookings() {
     if (!confirm) return;
 
     try {
-      const API = process.env.REACT_APP_API_URL
+      const API = process.env.REACT_APP_API_URL || "";
       const token = getToken()
       const res = await fetch(`${API}/bookings/${bookingId}/cancel`, {
         method: "PUT",

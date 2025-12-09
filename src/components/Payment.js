@@ -37,7 +37,7 @@ function Payment() {
     let mounted = true
     const load = async () => {
       try {
-        const API = process.env.REACT_APP_API_URL;
+        const API = process.env.REACT_APP_API_URL || "";
         const token = getToken();  // <-- add this above
         const res = await fetch(`${API}/movies/shows/${showId}`, {
           headers: {
@@ -56,7 +56,7 @@ function Payment() {
 
         const movieId = s.movieId ?? s.movie_id ?? s.movie
         if (movieId) {
-          const API = process.env.REACT_APP_API_URL;
+          const API = process.env.REACT_APP_API_URL || "";
           const token = getToken();
           const mres = await fetch(`${API}/movies/${movieId}`, {
             headers: {
@@ -94,7 +94,7 @@ function Payment() {
         bookingId: bookingIdFromState,
         amount: amountFromState
       }
-      const API = process.env.REACT_APP_API_URL;
+      const API = process.env.REACT_APP_API_URL || "";
       const token = getToken();
       const res = await fetch(`${API}/payment/pay`, {
         method: 'POST',
