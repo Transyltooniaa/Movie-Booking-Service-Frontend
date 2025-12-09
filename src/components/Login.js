@@ -72,7 +72,8 @@ let addList = (loginUser) => {
 
       // Store token and role
       setToken(`Bearer ${data.token}`);
-      if (data?.role) localStorage.setItem('role', data.role);
+      // if (data?.role) localStorage.setItem('role', data.role);
+      if (data?.role) sessionStorage.setItem('role', data.role);
 
       // No /users/me endpoint: decode JWT for basic identity
       try {
@@ -81,7 +82,8 @@ let addList = (loginUser) => {
         const role = data?.role || decoded?.role;
         const userDetail = { email, role };
         setUser(userDetail);
-        if (email) localStorage.setItem('email', email);
+        // if (email) localStorage.setItem('email', email);
+        if (email) sessionStorage.setItem('email', email);
       } catch {}
 
       navigate('/bookmyshow/movies');

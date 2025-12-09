@@ -12,13 +12,14 @@ function Bookings() {
     let [show,setShow] = useState([])
     let [theater,setTheater] = useState([])
 
-    const token = localStorage.getItem("Authorization")
+    // const token = localStorage.getItem("Authorization")
+    const token = sessionStorage.getItem("Authorization")
 
     const getMovie = () => {
       fetch(`${API}/movies/${id}`, {
         method: "GET",
         headers: {
-          Authorization: localStorage.getItem("Authorization") || '',
+          Authorization: token || '',
         }
       })
       .then((data) => data.json())
