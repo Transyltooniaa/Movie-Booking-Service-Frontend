@@ -336,22 +336,7 @@ Credits & Acknowledgements
 
 ---
 
-License
--------
-This repository is currently unlicensed. Replace with a real license file (MIT, Apache-2.0, etc.) as appropriate.
-
----
-
-Contact
--------
-Built with ❤️ by the Movie Booking Team / Transyltooniaa
-
-- GitHub: https://github.com/Transyltooniaa
-- Twitter: @yourhandle (optional)
-- Email: your-email@example.com (optional)
-
----
-
 Footer — a small manifesto
 --------------------------
 "Movies bring people together. This project helps make the simple joy of booking a seat fast, beautiful, and accessible. — Keep it simple. Make it fast. Delight the user." 🎞️✨
+
