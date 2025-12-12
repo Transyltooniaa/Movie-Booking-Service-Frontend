@@ -87,7 +87,16 @@ export default function MyBookings() {
       setCreatedMap(updatedMap);
       persistCreatedMap(updatedMap);
 
-      setBookings(data);
+      // Sort by createdAt descending (latest first)
+      const sorted = Array.isArray(data)
+        ? [...data].sort((a, b) => {
+            const tsA = Date.parse(a?.createdAt) || 0;
+            const tsB = Date.parse(b?.createdAt) || 0;
+            return tsB - tsA;
+          })
+        : [];
+
+      setBookings(sorted);
       setLoading(false);
       setLastRefreshedAt(Date.now());
     } catch (err) {

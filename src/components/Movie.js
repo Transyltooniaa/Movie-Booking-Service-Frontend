@@ -499,7 +499,7 @@ function Movie() {
 
           {/* Cast Section */}
           <Box>
-            <Typography 
+            {/* <Typography 
               variant="h5" 
               sx={{ 
                 mb: 3, 
@@ -517,7 +517,7 @@ function Movie() {
                 borderRadius: 1
               }} />
               Cast & Crew
-            </Typography>
+            </Typography> */}
             
             <Box sx={{ 
               display: 'grid',
